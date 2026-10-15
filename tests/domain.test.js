@@ -1,0 +1,114 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createEmptyState } from '../dist/storage.js';
+import { placeMember, autoPlaceMember, createPurchase, calculatePayouts, registerMemberWithPackage, seedRandomUsers } from '../dist/domain.js';
+
+function baseState() {
+  const state = createEmptyState();
+  state.users.push(
+    { id: 'u1', username: 'root', name: 'Root', sponsorId: null, role: 'user' },
+    { id: 'u2', username: 'alice', name: 'Alice', sponsorId: 'u1', role: 'user' },
+    { id: 'u3', username: 'bob', name: 'Bob', sponsorId: 'u1', role: 'user' }
+  );
+  state.binaryPositions.push(
+    { userId: 'u1', parentId: null, side: null, depth: 0 },
+    { userId: 'u2', parentId: 'u1', side: 'left', depth: 1 },
+    { userId: 'u3', parentId: 'u1', side: 'right', depth: 1 }
+  );
+  return state;
+}
+
+test('rejects occupied manual binary side', () => {
+  const result = placeMember(baseState(), { userId: 'u4', parentId: 'u1', side: 'left' });
+  assert.equal(result.ok, false);
+});
+
+test('auto placement finds the first available binary slot', () => {
+  const state = baseState();
+  state.users.push({ id: 'u4', username: 'cathy', name: 'Cathy', sponsorId: 'u2', role: 'user' });
+  const result = autoPlaceMember(state, { userId: 'u4', rootId: 'u1' });
+  assert.equal(result.ok, true);
+  assert.equal(result.position.parentId, 'u2');
+});
+
+test('payout allocation totals 100 USDT and preserves unmatched recipients', () => {
+  const state = baseState();
+  state.users.push({ id: 'u4', username: 'dave', name: 'Dave', sponsorId: 'u2', role: 'user' });
+  state.binaryPositions.push({ userId: 'u4', parentId: 'u2', side: 'left', depth: 2 });
+  const purchase = createPurchase(state, 'u4');
+  const payouts = calculatePayouts(state, purchase.purchase.id);
+  assert.equal(payouts.reduce((sum, item) => sum + item.amount, 0), 100);
+  assert.ok(payouts.some((item) => item.status === 'unmatched'));
+  assert.equal(payouts.find((item) => item.type === 'referral').amount, 30);
+});
+
+test('duplicate purchase key returns the original purchase', () => {
+  const state = baseState();
+  const first = createPurchase(state, 'u2', 'demo-key');
+  const second = createPurchase(state, 'u2', 'demo-key');
+  assert.equal(first.purchase.id, second.purchase.id);
+  assert.equal(state.purchases.length, 1);
+});
+
+test('registration creates a package purchase and payout ledger in one flow', () => {
+  const state = createEmptyState();
+  state.users.push({ id: 'u1', username: 'ฉัน', name: 'ฉัน', sponsorId: null, role: 'user' });
+  state.binaryPositions.push({ userId: 'u1', parentId: null, side: null, depth: 0 });
+  const result = registerMemberWithPackage(state, { name: 'New User', sponsorId: 'u1', rootId: 'u1' });
+  assert.equal(result.user.name, 'New User');
+  assert.equal(state.purchases.length, 1);
+  assert.equal(state.payouts.reduce((sum, item) => sum + item.amount, 0), 100);
+  assert.equal(state.payouts.find((item) => item.type === 'referral').recipientUserId, 'u1');
+});
+
+test('registration places under the selected sponsor subtree', () => {
+  const state = baseState();
+  const result = registerMemberWithPackage(state, { name: 'Sponsored User', sponsorId: 'u2', rootId: 'u1' });
+  const position = state.binaryPositions.find((item) => item.userId === result.user.id);
+  assert.equal(position.parentId, 'u2');
+  assert.equal(state.payouts.find((item) => item.type === 'referral').recipientUserId, 'u2');
+});
+
+test('registration without sponsor pays referral to system user one', () => {
+  const state = baseState();
+  const result = registerMemberWithPackage(state, { name: 'Unreferred User', rootId: 'u1' });
+  const referral = state.payouts.find((item) => item.type === 'referral');
+  const position = state.binaryPositions.find((item) => item.userId === result.user.id);
+  assert.equal(position.parentId, 'u2');
+  assert.equal(referral.recipientUserId, 'u1');
+});
+
+test('payouts split structure into realtime and reserve wallets while FVR is paid to system', () => {
+  const state = baseState();
+  const purchase = createPurchase(state, 'u2');
+  const payouts = calculatePayouts(state, purchase.purchase.id);
+  const structure = payouts.filter((item) => item.type === 'structure');
+  assert.equal(structure.length, 10);
+  assert.equal(structure.filter((item) => item.walletRole === 'realtime').reduce((sum, item) => sum + item.amount, 0), 30);
+  assert.equal(structure.filter((item) => item.walletRole === 'reserve').reduce((sum, item) => sum + item.amount, 0), 20);
+  assert.ok(structure.filter((item) => item.walletRole === 'realtime' && item.recipientUserId).every((item) => item.status === 'paid'));
+  assert.ok(structure.filter((item) => item.walletRole === 'reserve' && item.recipientUserId).every((item) => item.status === 'accumulating'));
+  const fvr = payouts.find((item) => item.type === 'fvr');
+  assert.equal(fvr.status, 'paid');
+  assert.equal(fvr.recipientName, 'FVR/FM System Wallet');
+  assert.equal(fvr.wallet, 'FVR/FM system wallet');
+});
+
+test('registration activates the member and records reserve accumulation', () => {
+  const state = baseState();
+  const result = registerMemberWithPackage(state, { name: 'Active User', sponsorId: 'u1', rootId: 'u1' });
+  assert.equal(result.user.status, 'active');
+  assert.equal(state.reserveBalances.u1, 4);
+  assert.equal(state.settings.rebirthEnabled, true);
+});
+
+test('seeds the requested number of random active users with package purchases', () => {
+  const state = baseState();
+  const result = seedRandomUsers(state, 19);
+  assert.equal(result.users.length, 19);
+  assert.equal(result.purchases.length, 19);
+  assert.ok(result.users.every((user) => user.status === 'active'));
+  assert.equal(state.users.length, 22);
+  assert.equal(state.purchases.length, 19);
+  assert.ok(state.payouts.length >= 19 * 16);
+});
