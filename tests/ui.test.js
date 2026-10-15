@@ -40,6 +40,26 @@ test('binary tree highlights direct referral edges and rebirth nodes', () => {
   assert.match(html, /rebirth-node/);
 });
 
+test('ternary tree renders left center right connectors and center slot metadata', () => {
+  const state = createEmptyState();
+  state.session = { id: 'demo-user', username: 'demo-user', role: 'user' };
+  state.users.push(
+    { id: 'u1', username: 'root', name: 'Root', sponsorId: null, role: 'user' },
+    { id: 'u2', username: 'center', name: 'Center', sponsorId: 'u1', role: 'user' }
+  );
+  state.binaryPositions.push(
+    { userId: 'u1', parentId: null, side: null, depth: 0 },
+    { userId: 'u2', parentId: 'u1', side: 'center', depth: 1 }
+  );
+  const html = tree(state);
+  assert.match(html, /TERNARY TREE/);
+  assert.match(html, /data-side="center"/);
+  assert.match(html, /CENTER/);
+  assert.match(html, /data-side="left"/);
+  assert.match(html, /data-side="right"/);
+  assert.match(html, /aria-label="Ternary tree connections"/);
+});
+
 test('dashboard and tree expose the full payout plan clearly', () => {
   const state = createEmptyState();
   state.session = { id: 'demo-user', username: 'demo-user', role: 'user' };

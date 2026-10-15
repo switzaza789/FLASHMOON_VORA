@@ -18,17 +18,34 @@ function baseState() {
   return state;
 }
 
-test('rejects occupied manual binary side', () => {
-  const result = placeMember(baseState(), { userId: 'u4', parentId: 'u1', side: 'left' });
-  assert.equal(result.ok, false);
+test('accepts ternary center placement and rejects an occupied slot', () => {
+  const state = baseState();
+  const center = placeMember(state, { userId: 'u4', parentId: 'u1', side: 'center' });
+  assert.equal(center.ok, true);
+  assert.equal(center.position.side, 'center');
+  const duplicate = placeMember(state, { userId: 'u5', parentId: 'u1', side: 'center' });
+  assert.equal(duplicate.ok, false);
 });
 
-test('auto placement finds the first available binary slot', () => {
+test('rejects an invalid ternary side', () => {
+  const result = placeMember(baseState(), { userId: 'u4', parentId: 'u1', side: 'left' });
+  assert.equal(result.ok, false, 'left is occupied in the fixture');
+  const invalid = placeMember(baseState(), { userId: 'u4', parentId: 'u1', side: 'diagonal' });
+  assert.equal(invalid.ok, false);
+});
+
+test('auto placement finds slots left then center then right before descending', () => {
   const state = baseState();
-  state.users.push({ id: 'u4', username: 'cathy', name: 'Cathy', sponsorId: 'u2', role: 'user' });
-  const result = autoPlaceMember(state, { userId: 'u4', rootId: 'u1' });
-  assert.equal(result.ok, true);
-  assert.equal(result.position.parentId, 'u2');
+  state.users.push(
+    { id: 'u4', username: 'cathy', name: 'Cathy', sponsorId: 'u1', role: 'user' },
+    { id: 'u5', username: 'dana', name: 'Dana', sponsorId: 'u1', role: 'user' },
+    { id: 'u6', username: 'erin', name: 'Erin', sponsorId: 'u1', role: 'user' }
+  );
+  assert.equal(autoPlaceMember(state, { userId: 'u4', rootId: 'u1' }).position.side, 'center');
+  assert.equal(autoPlaceMember(state, { userId: 'u5', rootId: 'u1' }).position.parentId, 'u2');
+  const next = autoPlaceMember(state, { userId: 'u6', rootId: 'u1' });
+  assert.equal(next.position.parentId, 'u2');
+  assert.equal(next.position.side, 'center');
 });
 
 test('payout allocation totals 100 USDT and preserves unmatched recipients', () => {
@@ -74,16 +91,23 @@ test('registration without sponsor pays referral to system user one', () => {
   const result = registerMemberWithPackage(state, { name: 'Unreferred User', rootId: 'u1' });
   const referral = state.payouts.find((item) => item.type === 'referral');
   const position = state.binaryPositions.find((item) => item.userId === result.user.id);
-  assert.equal(position.parentId, 'u2');
+  assert.equal(position.parentId, 'u1');
+  assert.equal(position.side, 'center');
   assert.equal(referral.recipientUserId, 'u1');
 });
 
-test('payouts split structure into realtime and reserve wallets while FVR is paid to system', () => {
+test('payouts send one structure recipient per level with realtime and reserve wallets', () => {
   const state = baseState();
   const purchase = createPurchase(state, 'u2');
   const payouts = calculatePayouts(state, purchase.purchase.id);
   const structure = payouts.filter((item) => item.type === 'structure');
   assert.equal(structure.length, 10);
+  assert.equal(new Set(structure.map((item) => item.level)).size, 5);
+  for (const level of [1, 2, 3, 4, 5]) {
+    const levelRows = structure.filter((item) => item.level === level);
+    assert.equal(new Set(levelRows.map((item) => item.recipientUserId)).size, 1);
+    assert.equal(levelRows.reduce((sum, item) => sum + item.amount, 0), 10);
+  }
   assert.equal(structure.filter((item) => item.walletRole === 'realtime').reduce((sum, item) => sum + item.amount, 0), 30);
   assert.equal(structure.filter((item) => item.walletRole === 'reserve').reduce((sum, item) => sum + item.amount, 0), 20);
   assert.ok(structure.filter((item) => item.walletRole === 'realtime' && item.recipientUserId).every((item) => item.status === 'paid'));

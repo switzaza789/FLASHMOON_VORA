@@ -1,7 +1,7 @@
 const id = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 export function placeMember(state, { userId, parentId, side }) {
-  if (!['left', 'right'].includes(side)) return { ok: false, error: 'เลือกฝั่งซ้ายหรือขวา' };
+  if (!['left', 'center', 'right'].includes(side)) return { ok: false, error: 'เลือกตำแหน่งซ้าย กลาง หรือขวา' };
   if (state.binaryPositions.some((position) => position.parentId === parentId && position.side === side)) return { ok: false, error: 'ตำแหน่งนี้ถูกใช้งานแล้ว' };
   const parent = state.binaryPositions.find((position) => position.userId === parentId);
   const position = { userId, parentId, side, depth: (parent?.depth ?? -1) + 1 };
@@ -13,10 +13,13 @@ export function autoPlaceMember(state, { userId, rootId }) {
   const queue = [rootId];
   while (queue.length) {
     const parentId = queue.shift();
-    for (const side of ['left', 'right']) {
+    for (const side of ['left', 'center', 'right']) {
       if (!state.binaryPositions.some((position) => position.parentId === parentId && position.side === side)) return placeMember(state, { userId, parentId, side });
     }
-    state.binaryPositions.filter((position) => position.parentId === parentId).forEach((position) => queue.push(position.userId));
+    state.binaryPositions
+      .filter((position) => position.parentId === parentId)
+      .sort((a, b) => ({ left: 0, center: 1, right: 2 }[a.side] ?? 9) - ({ left: 0, center: 1, right: 2 }[b.side] ?? 9))
+      .forEach((position) => queue.push(position.userId));
   }
   return { ok: false, error: 'ไม่พบตำแหน่งว่างในผัง' };
 }
