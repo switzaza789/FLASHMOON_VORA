@@ -102,6 +102,8 @@ test('member detail modal exposes colored income breakdown and wallet transactio
   assert.match(html, /structure-realtime/);
   assert.match(html, /structure-reserve/);
   assert.match(html, /structure-summary/);
+  assert.match(html, /structure-full-width/);
+  assert.match(html, /5 ชั้น · ชั้นละ 10 USDT/);
   assert.match(html, /รายได้รวม/);
   assert.match(html, /Source User/);
   assert.match(html, /payout-detail-row/);
