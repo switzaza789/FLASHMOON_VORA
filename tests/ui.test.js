@@ -114,7 +114,7 @@ test('member income detail keeps the full summary scrollable on short screens', 
 
 test('structure income levels use readable rows instead of cramped columns', () => {
   const cssSource = readFileSync(new URL('../dist/tree-overrides.css', import.meta.url), 'utf8');
-  assert.match(cssSource, /\.structure-split \.level-breakdown,\.structure-split>div>div\{display:grid;grid-template-columns:1fr;/);
+  assert.match(cssSource, /\.structure-split \.level-breakdown,\.structure-split>div>div\{display:grid;grid-template-columns:1fr !important;/);
   assert.match(cssSource, /\.structure-split \.level-row b\{margin-left:auto;font-size:11px;/);
 });
 
