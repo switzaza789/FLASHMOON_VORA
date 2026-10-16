@@ -99,7 +99,15 @@ test('tree graph renders one connector layer and payout chips on each member', (
   assert.match(html, /Referral/);
   assert.match(html, /tree-zoom-in/);
   assert.match(html, /tree-zoom-fit/);
+  assert.match(html, /tree-center/);
   assert.match(html, /data-user="u1"/);
+});
+
+test('tree center action recenters the viewport without changing zoom', () => {
+  const appSource = readFileSync(new URL('../dist/app.js', import.meta.url), 'utf8');
+  assert.match(appSource, /action === 'tree-center'/);
+  assert.match(appSource, /scrollLeft = Math\.max\(0, \(stage\.offsetWidth \* zoom - viewport\.clientWidth\) \/ 2\)/);
+  assert.match(appSource, /scrollTop = Math\.max\(0, \(stage\.offsetHeight \* zoom - viewport\.clientHeight\) \/ 2\)/);
 });
 
 test('tree zoom supports viewing a full large ternary graph below 25 percent', () => {
