@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { createEmptyState } from '../dist/storage.js';
 import { tree, dashboard, admin, transactionsAudit, earningsDetailed, memberDetailsPanelModal } from '../dist/views.js';
 
@@ -99,6 +100,11 @@ test('tree graph renders one connector layer and payout chips on each member', (
   assert.match(html, /tree-zoom-in/);
   assert.match(html, /tree-zoom-fit/);
   assert.match(html, /data-user="u1"/);
+});
+
+test('tree zoom supports viewing a full large ternary graph below 25 percent', () => {
+  const appSource = readFileSync(new URL('../dist/app.js', import.meta.url), 'utf8');
+  assert.match(appSource, /Math\.max\(0\.1, next\)/);
 });
 
 test('transaction view renders an easy-to-scan purchase flow', () => {
