@@ -112,6 +112,12 @@ test('member income detail keeps the full summary scrollable on short screens', 
   assert.match(cssSource, /\.modal:has\(\.member-detail-layout\)\{width:min\(1120px,96vw\);max-height:min\(900px,92vh\);overflow:auto/);
 });
 
+test('structure income levels use readable rows instead of cramped columns', () => {
+  const cssSource = readFileSync(new URL('../dist/tree-overrides.css', import.meta.url), 'utf8');
+  assert.match(cssSource, /\.structure-split \.level-breakdown,\.structure-split>div>div\{display:grid;grid-template-columns:1fr;/);
+  assert.match(cssSource, /\.structure-split \.level-row b\{margin-left:auto;font-size:11px;/);
+});
+
 test('transaction view renders an easy-to-scan purchase flow', () => {
   const state = createEmptyState();
   state.session = { id: 'demo-user', username: 'demo-user', role: 'user' };
