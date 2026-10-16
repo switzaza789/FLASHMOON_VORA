@@ -136,3 +136,14 @@ test('seeds the requested number of random active users with package purchases',
   assert.equal(state.purchases.length, 19);
   assert.ok(state.payouts.length >= 19 * 16);
 });
+
+test('seeds random users across three ternary levels without exceeding level three', () => {
+  const state = createEmptyState();
+  state.users.push({ id: 'u1', username: 'root', name: 'Root', sponsorId: null, role: 'user' });
+  state.binaryPositions.push({ userId: 'u1', parentId: null, side: null, depth: 0 });
+  const result = seedRandomUsers(state, 40, { maxDepth: 3 });
+  assert.ok(result.users.length < 40);
+  assert.ok(state.binaryPositions.every((position) => position.depth <= 3));
+  assert.ok(result.users.every((user) => user.status === 'active'));
+  assert.ok(result.users.some((user) => state.binaryPositions.find((position) => position.userId === user.id)?.depth === 3));
+});

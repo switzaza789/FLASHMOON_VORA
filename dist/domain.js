@@ -9,10 +9,12 @@ export function placeMember(state, { userId, parentId, side }) {
   return { ok: true, position };
 }
 
-export function autoPlaceMember(state, { userId, rootId }) {
+export function autoPlaceMember(state, { userId, rootId, maxDepth = Infinity }) {
   const queue = [rootId];
   while (queue.length) {
     const parentId = queue.shift();
+    const parent = state.binaryPositions.find((position) => position.userId === parentId);
+    if ((parent?.depth ?? 0) >= maxDepth) continue;
     for (const side of ['left', 'center', 'right']) {
       if (!state.binaryPositions.some((position) => position.parentId === parentId && position.side === side)) return placeMember(state, { userId, parentId, side });
     }
@@ -101,7 +103,7 @@ export function recordPayouts(state, payouts) {
   return payouts;
 }
 
-export function seedRandomUsers(state, count = 19) {
+export function seedRandomUsers(state, count = 19, { maxDepth = Infinity } = {}) {
   const rootId = state.binaryPositions.find((position) => !position.parentId)?.userId;
   if (!rootId) return { users: [], purchases: [], payouts: [] };
   const names = ['Nina', 'Liam', 'Maya', 'Noah', 'Iris', 'Kai', 'Luna', 'Milo', 'Aria', 'Evan', 'Zoe', 'Leo', 'Mia', 'Owen', 'Ava', 'Max', 'Ella', 'Finn', 'Ruby'];
@@ -110,7 +112,13 @@ export function seedRandomUsers(state, count = 19) {
     const eligibleSponsors = state.users.filter((user) => state.binaryPositions.some((position) => position.userId === user.id));
     const sponsor = eligibleSponsors[Math.floor(Math.random() * eligibleSponsors.length)] || state.users.find((user) => user.id === rootId);
     const name = `${names[index % names.length]} Demo ${String(index + 1).padStart(2, '0')}`;
-    const result = registerMemberWithPackage(state, { name, sponsorId: sponsor?.id || rootId, rootId });
+    let result;
+    try {
+      result = registerMemberWithPackage(state, { name, sponsorId: sponsor?.id || rootId, rootId, placementRootId: rootId, maxDepth });
+    } catch (error) {
+      if (maxDepth !== Infinity && /ไม่พบตำแหน่งว่าง/.test(error.message)) break;
+      throw error;
+    }
     created.users.push(result.user);
     created.purchases.push(result.purchase);
     created.payouts.push(...result.payouts);
@@ -118,14 +126,14 @@ export function seedRandomUsers(state, count = 19) {
   return created;
 }
 
-export function registerMemberWithPackage(state, { name, sponsorId = null, rootId = null }) {
+export function registerMemberWithPackage(state, { name, sponsorId = null, rootId = null, placementRootId = null, maxDepth = Infinity }) {
   const user = { id: id('user'), name, username: name, sponsorId, role: 'user', status: 'active' };
   state.users.push(user);
   if (!state.binaryPositions.length) {
     state.binaryPositions.push({ userId: user.id, parentId: null, side: null, depth: 0 });
   } else {
-    const root = sponsorId || rootId || state.binaryPositions.find((position) => !position.parentId)?.userId;
-    const placement = autoPlaceMember(state, { userId: user.id, rootId: root });
+    const root = placementRootId || sponsorId || rootId || state.binaryPositions.find((position) => !position.parentId)?.userId;
+    const placement = autoPlaceMember(state, { userId: user.id, rootId: root, maxDepth });
     if (!placement.ok) throw new Error(placement.error);
   }
   const purchase = createPurchase(state, user.id, `registration-${user.id}`);

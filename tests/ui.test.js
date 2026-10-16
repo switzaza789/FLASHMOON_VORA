@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createEmptyState } from '../dist/storage.js';
-import { tree, dashboard, transactionsAudit, earningsDetailed, memberDetailsPanelModal } from '../dist/views.js';
+import { tree, dashboard, admin, transactionsAudit, earningsDetailed, memberDetailsPanelModal } from '../dist/views.js';
 
 test('binary tree view renders explicit connector lines and wallet labels', () => {
   const state = createEmptyState();
@@ -66,6 +66,12 @@ test('dashboard and tree expose the full payout plan clearly', () => {
   assert.match(dashboard(state), /payout-plan/);
   assert.match(dashboard(state), /ค่าแนะนำ/);
   assert.match(transactionsAudit(state), /Money Flow Explorer/);
+});
+
+test('admin exposes a three-level random simulation action', () => {
+  const state = createEmptyState();
+  state.session = { id: 'demo-admin', username: 'demo-admin', role: 'admin' };
+  assert.match(admin(state), /seed-random-3/);
 });
 
 test('tree graph renders one connector layer and payout chips on each member', () => {
