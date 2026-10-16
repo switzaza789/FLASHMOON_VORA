@@ -118,6 +118,11 @@ test('structure income levels use readable rows instead of cramped columns', () 
   assert.match(cssSource, /\.structure-split \.level-row b\{margin-left:auto;font-size:11px;/);
 });
 
+test('structure income rows override legacy five-column layout', () => {
+  const cssSource = readFileSync(new URL('../dist/tree-overrides.css', import.meta.url), 'utf8');
+  assert.match(cssSource, /grid-template-columns:1fr !important/);
+});
+
 test('transaction view renders an easy-to-scan purchase flow', () => {
   const state = createEmptyState();
   state.session = { id: 'demo-user', username: 'demo-user', role: 'user' };
