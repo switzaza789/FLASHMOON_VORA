@@ -24,16 +24,20 @@ function treeGraph(state, rootId, locale) {
   const nodes = [];
   const edges = [];
   const slots = [];
+  const MAX_TREE_DEPTH = 5;
   const slotIndex = { left: 0, center: 1, right: 2 };
   const normalizedSlot = (side) => side === 'right' ? 2 : side === 'center' ? 1 : 0;
   const walk = (userId, depth, path, parentId = null, side = null) => {
     const user = state.users.find((item) => item.id === userId);
     if (!user) return;
+    if (depth > MAX_TREE_DEPTH) return;
     nodes.push({ user, depth, path, parentId, side });
     const children = state.binaryPositions.filter((item) => item.parentId === userId);
     for (const position of children) walk(position.userId, depth + 1, [...path, normalizedSlot(position.side)], userId, position.side);
-    for (const sideName of ['left', 'center', 'right']) {
-      if (!children.some((item) => normalizedSlot(item.side) === slotIndex[sideName])) slots.push({ parentId: userId, depth: depth + 1, path: [...path, slotIndex[sideName]], side: sideName });
+    if (depth < MAX_TREE_DEPTH) {
+      for (const sideName of ['left', 'center', 'right']) {
+        if (!children.some((item) => normalizedSlot(item.side) === slotIndex[sideName])) slots.push({ parentId: userId, depth: depth + 1, path: [...path, slotIndex[sideName]], side: sideName });
+      }
     }
   };
   walk(rootId, 0, [], null, null);
@@ -82,7 +86,7 @@ export function earningsDetailed(state) { const l = state.locale; const rows = s
 
 export function earnings(state) { return earningsDetailed(state); }
 
-export function admin(state) { const l = state.locale; return layout(state, 'admin', `<section class="full-page"><div class="section-head"><div><span class="eyebrow">ADMIN / CONTROL ROOM</span><h2>จัดการระบบจำลอง</h2><p class="subtext">ตรวจสอบสมาชิก ธุรกรรม และรอบจ่ายจากจุดเดียว</p></div><div class="admin-actions"><button class="secondary" data-action="seed-random-3">＋ จำลอง Random 3 ชั้น</button><button class="secondary" data-action="seed-random">＋ เพิ่ม Random 19 User</button><button class="primary" data-action="process">⚡ ${t('process', l)}</button></div></div><div class="metrics">${metric(t('members', l), state.users.length, 'cyan')}${metric(t('purchases', l), state.purchases.length)}${metric('Payout rows', state.payouts.length)}${metric('Unmatched', state.payouts.filter((p) => p.status === 'unmatched').length, 'amber')}</div><div class="panel"><div class="panel-head"><h3>Member registry</h3><span class="tiny-label">${state.users.length} records</span></div><div class="member-list">${state.users.map((u) => `<div class="member-row"><div class="avatar">${u.name.slice(0, 1)}</div><div><b>${esc(u.name)}</b><small>@${esc(u.username)} · sponsor ${userName(state, u.sponsorId)}</small></div><span>${state.purchases.filter((p) => p.buyerId === u.id).length} purchases</span><span class="chip success">active</span></div>`).join('') || `<div class="table-empty">${t('noData', l)}</div>`}</div></div></section>`); }
+export function admin(state) { const l = state.locale; return layout(state, 'admin', `<section class="full-page"><div class="section-head"><div><span class="eyebrow">ADMIN / CONTROL ROOM</span><h2>จัดการระบบจำลอง</h2><p class="subtext">ตรวจสอบสมาชิก ธุรกรรม และรอบจ่ายจากจุดเดียว</p></div><div class="admin-actions"><button class="secondary" data-action="seed-random-5">＋ จำลอง Random 5 ชั้น</button><button class="secondary" data-action="seed-random">＋ เพิ่ม Random 19 User</button><button class="primary" data-action="process">⚡ ${t('process', l)}</button></div></div><div class="metrics">${metric(t('members', l), state.users.length, 'cyan')}${metric(t('purchases', l), state.purchases.length)}${metric('Payout rows', state.payouts.length)}${metric('Unmatched', state.payouts.filter((p) => p.status === 'unmatched').length, 'amber')}</div><div class="panel"><div class="panel-head"><h3>Member registry</h3><span class="tiny-label">${state.users.length} records</span></div><div class="member-list">${state.users.map((u) => `<div class="member-row"><div class="avatar">${u.name.slice(0, 1)}</div><div><b>${esc(u.name)}</b><small>@${esc(u.username)} · sponsor ${userName(state, u.sponsorId)}</small></div><span>${state.purchases.filter((p) => p.buyerId === u.id).length} purchases</span><span class="chip success">active</span></div>`).join('') || `<div class="table-empty">${t('noData', l)}</div>`}</div></div></section>`); }
 function rebirthRegistry(state, userId) {
   const records = (state.rebirths || []).filter((rebirth) => rebirth.ownerUserId === userId).map((rebirth) => {
     const code = state.users.find((user) => user.id === rebirth.userId);

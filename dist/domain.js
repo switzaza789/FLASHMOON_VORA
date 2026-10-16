@@ -72,18 +72,18 @@ export function calculatePayouts(state, purchaseId) {
   return payouts;
 }
 
-function createRebirthCode(state, owner) {
+function createRebirthCode(state, owner, maxDepth = Infinity) {
   const count = state.rebirths.filter((rebirth) => rebirth.ownerUserId === owner.id).length + 1;
   const user = { id: id('rebirth'), name: `${owner.name} · Rebirth ${count}`, username: `${owner.username}-R${count}`, sponsorId: owner.id, ownerUserId: owner.id, role: 'user', status: 'active', isRebirth: true };
   state.users.push(user);
-  const placement = autoPlaceMember(state, { userId: user.id, rootId: owner.id });
+  const placement = autoPlaceMember(state, { userId: user.id, rootId: owner.id, maxDepth });
   if (!placement.ok) return null;
   const rebirth = { id: id('rebirth-record'), ownerUserId: owner.id, userId: user.id, amount: 100, createdAt: new Date().toISOString() };
   state.rebirths.push(rebirth);
   return rebirth;
 }
 
-export function recordPayouts(state, payouts) {
+export function recordPayouts(state, payouts, maxDepth = Infinity) {
   state.reserveBalances ||= {};
   state.rebirths ||= [];
   state.settings ||= {};
@@ -96,7 +96,7 @@ export function recordPayouts(state, payouts) {
     state.reserveBalances[userId] = (state.reserveBalances[userId] || 0) + payout.amount;
     while (state.reserveBalances[userId] >= 100) {
       const owner = state.users.find((user) => user.id === userId);
-      if (!owner || !createRebirthCode(state, owner)) break;
+      if (!owner || !createRebirthCode(state, owner, maxDepth)) break;
       state.reserveBalances[userId] -= 100;
     }
   }
@@ -138,6 +138,6 @@ export function registerMemberWithPackage(state, { name, sponsorId = null, rootI
   }
   const purchase = createPurchase(state, user.id, `registration-${user.id}`);
   const payouts = calculatePayouts(state, purchase.purchase.id);
-  recordPayouts(state, payouts);
+  recordPayouts(state, payouts, maxDepth);
   return { user, purchase: purchase.purchase, payouts };
 }

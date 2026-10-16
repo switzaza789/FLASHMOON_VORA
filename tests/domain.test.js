@@ -147,3 +147,24 @@ test('seeds random users across three ternary levels without exceeding level thr
   assert.ok(result.users.every((user) => user.status === 'active'));
   assert.ok(result.users.some((user) => state.binaryPositions.find((position) => position.userId === user.id)?.depth === 3));
 });
+
+test('auto placement caps a deep ternary simulation at level five', () => {
+  const state = createEmptyState();
+  state.users.push({ id: 'u1', username: 'root', name: 'Root', sponsorId: null, role: 'user' });
+  state.binaryPositions.push({ userId: 'u1', parentId: null, side: null, depth: 0 });
+  for (let index = 0; index < 400; index += 1) {
+    const userId = `deep-${index}`;
+    state.users.push({ id: userId, username: userId, name: userId, sponsorId: 'u1', role: 'user' });
+    const result = autoPlaceMember(state, { userId, rootId: 'u1', maxDepth: 5 });
+    if (!result.ok) break;
+  }
+  assert.ok(state.binaryPositions.every((position) => position.depth <= 5));
+});
+
+test('five-level random simulation also keeps rebirth nodes within level five', () => {
+  const state = createEmptyState();
+  state.users.push({ id: 'u1', username: 'root', name: 'Root', sponsorId: null, role: 'user' });
+  state.binaryPositions.push({ userId: 'u1', parentId: null, side: null, depth: 0 });
+  seedRandomUsers(state, 60, { maxDepth: 5 });
+  assert.ok(state.binaryPositions.every((position) => position.depth <= 5));
+});

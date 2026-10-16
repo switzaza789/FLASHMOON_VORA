@@ -60,6 +60,19 @@ test('ternary tree renders left center right connectors and center slot metadata
   assert.match(html, /aria-label="Ternary tree connections"/);
 });
 
+test('ternary tree view caps visible depth at level five', () => {
+  const state = createEmptyState();
+  state.session = { id: 'demo-user', username: 'demo-user', role: 'user' };
+  for (let index = 0; index <= 6; index += 1) {
+    const userId = `u${index}`;
+    state.users.push({ id: userId, username: userId, name: `User ${index}`, sponsorId: index ? `u${index - 1}` : null, role: 'user' });
+    state.binaryPositions.push({ userId, parentId: index ? `u${index - 1}` : null, side: index ? 'left' : null, depth: index });
+  }
+  const html = tree(state);
+  assert.match(html, /L5 · u5/);
+  assert.doesNotMatch(html, /L6 · u6/);
+});
+
 test('dashboard and tree expose the full payout plan clearly', () => {
   const state = createEmptyState();
   state.session = { id: 'demo-user', username: 'demo-user', role: 'user' };
@@ -68,10 +81,10 @@ test('dashboard and tree expose the full payout plan clearly', () => {
   assert.match(transactionsAudit(state), /Money Flow Explorer/);
 });
 
-test('admin exposes a three-level random simulation action', () => {
+test('admin exposes a five-level random simulation action', () => {
   const state = createEmptyState();
   state.session = { id: 'demo-admin', username: 'demo-admin', role: 'admin' };
-  assert.match(admin(state), /seed-random-3/);
+  assert.match(admin(state), /seed-random-5/);
 });
 
 test('tree graph renders one connector layer and payout chips on each member', () => {

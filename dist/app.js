@@ -7,8 +7,8 @@ let currentView = state.session ? 'dashboard' : 'entry';
 const app = document.querySelector('#app');
 
 const seedMode = new URLSearchParams(location.search).get('seed');
-if (seedMode === 'random19' || seedMode === 'random3') {
-  const seeded = seedMode === 'random3' ? seedRandomUsers(state, 12, { maxDepth: 3 }) : seedRandomUsers(state, 19);
+if (seedMode === 'random19' || seedMode === 'random3' || seedMode === 'random5') {
+  const seeded = seedMode === 'random5' ? seedRandomUsers(state, 60, { maxDepth: 5 }) : seedMode === 'random3' ? seedRandomUsers(state, 12, { maxDepth: 3 }) : seedRandomUsers(state, 19);
   saveState(state);
   history.replaceState({}, '', location.pathname);
   if (seeded.users.length) currentView = 'tree';
@@ -44,7 +44,7 @@ document.addEventListener('click', (event) => {
   if (action === 'tree-zoom-in' || action === 'tree-zoom-out' || action === 'tree-zoom-reset' || action === 'tree-zoom-fit') { changeTreeZoom(action); return; }
   if (action === 'close-modal') { closeModal(); return; }
   if (action === 'process') { processRun(); return; }
-  if (action === 'seed-random-3') { const result = seedRandomUsers(state, 12, { maxDepth: 3 }); persist(); currentView = 'tree'; render(); toast(`จำลองสมาชิกสุ่ม ${result.users.length} คน ไม่เกิน 3 ชั้น พร้อมซื้อแพ็กเกจแล้ว`, 'success'); return; }
+  if (action === 'seed-random-5') { const result = seedRandomUsers(state, 60, { maxDepth: 5 }); persist(); currentView = 'tree'; render(); toast(`จำลองสมาชิกสุ่ม ${result.users.length} คน ไม่เกิน 5 ชั้น พร้อมซื้อแพ็กเกจแล้ว`, 'success'); return; }
   if (action === 'seed-random') { const result = seedRandomUsers(state, 19); persist(); toast(`เพิ่มสมาชิกสุ่ม ${result.users.length} คน พร้อมซื้อแพ็กเกจแล้ว`, 'success'); return; }
   if (action === 'auto-place') { openPlacement(true); return; }
 });
