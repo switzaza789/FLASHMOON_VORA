@@ -107,6 +107,11 @@ test('tree zoom supports viewing a full large ternary graph below 25 percent', (
   assert.match(appSource, /Math\.max\(0\.1, next\)/);
 });
 
+test('member income detail keeps the full summary scrollable on short screens', () => {
+  const cssSource = readFileSync(new URL('../dist/tree-overrides.css', import.meta.url), 'utf8');
+  assert.match(cssSource, /\.modal:has\(\.member-detail-layout\)\{width:min\(1120px,96vw\);max-height:min\(900px,92vh\);overflow:auto/);
+});
+
 test('transaction view renders an easy-to-scan purchase flow', () => {
   const state = createEmptyState();
   state.session = { id: 'demo-user', username: 'demo-user', role: 'user' };
