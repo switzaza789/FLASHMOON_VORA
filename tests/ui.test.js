@@ -136,7 +136,7 @@ test('transaction view renders an easy-to-scan purchase flow', () => {
   state.session = { id: 'demo-user', username: 'demo-user', role: 'user' };
   state.users.push({ id: 'u1', username: 'root', name: 'Root', sponsorId: null, role: 'user' });
   state.purchases.push({ id: 'buy-1', buyerId: 'u1', amount: 100, currency: 'USDT', createdAt: new Date().toISOString() });
-  state.payouts.push({ id: 'pay-1', purchaseId: 'buy-1', sourceUserId: 'u1', recipientUserId: 'u1', recipientName: 'Root', wallet: 'root wallet', type: 'referral', amount: 30, status: 'pending' });
+  state.payouts.push({ id: 'pay-1', purchaseId: 'buy-1', sourceUserId: 'u1', recipientUserId: 'u1', recipientName: 'Root', wallet: 'root wallet', type: 'referral', amount: 20, status: 'pending' });
   const html = transactionsAudit(state);
   assert.match(html, /transaction-flow/);
   assert.match(html, /flow-route/);
@@ -149,7 +149,7 @@ test('earnings view includes every wallet and user-level detail', () => {
   state.users.push({ id: 'u1', username: 'root', name: 'Root', sponsorId: null, role: 'user' });
   const html = earningsDetailed(state);
   assert.match(html, /earn-user-card/);
-  assert.match(html, /FVR \/ FM Activity/);
+  assert.match(html, /FRM Wallet/);
   assert.match(html, /Sponsor:/);
   assert.match(html, /payout rows/);
 });
@@ -160,7 +160,7 @@ test('member detail modal exposes colored income breakdown and wallet transactio
   state.session = { id: 'demo-user', username: 'demo-user', role: 'user' };
   state.users.push({ id: 'u1', username: 'root', name: 'Root', sponsorId: null, role: 'user' });
   state.payouts.push(
-    { id: 'p1', purchaseId: 'buy-1', sourceUserId: 'u2', recipientUserId: 'u1', recipientName: 'Root', wallet: 'root wallet', type: 'referral', amount: 30, status: 'pending' },
+    { id: 'p1', purchaseId: 'buy-1', sourceUserId: 'u2', recipientUserId: 'u1', recipientName: 'Root', wallet: 'root wallet', type: 'referral', amount: 20, status: 'pending' },
     { id: 'p2', purchaseId: 'buy-1', sourceUserId: 'u3', recipientUserId: 'u1', recipientName: 'Root', wallet: 'root wallet', type: 'uni', level: 2, amount: 1, status: 'paid' },
     { id: 'p3', purchaseId: 'buy-1', sourceUserId: 'u4', recipientUserId: 'u1', recipientName: 'Root', wallet: 'root wallet', type: 'structure', level: 1, amount: 10, status: 'paid' }
   );
@@ -172,7 +172,7 @@ test('member detail modal exposes colored income breakdown and wallet transactio
   assert.match(html, /structure-reserve/);
   assert.match(html, /structure-summary/);
   assert.match(html, /structure-full-width/);
-  assert.match(html, /5 ชั้น · ชั้นละ 10 USDT/);
+  assert.match(html, /3 ชั้น · ชั้นละ 20 USDT/);
   assert.match(html, /รายได้รวม/);
   assert.match(html, /Source User/);
   assert.match(html, /payout-detail-row/);

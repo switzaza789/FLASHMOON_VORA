@@ -1,5 +1,7 @@
 # Ternary Tree Migration Implementation Plan
 
+> Historical plan. Structure payout amounts and depth were updated later; use [the current demo design spec](../specs/2026-10-15-flashmoon-vora-demo-design.md) for active rules.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** เปลี่ยนโครงสร้างผังจาก Binary Tree เป็น Ternary Tree โดยแต่ละ Node มีตำแหน่งซ้าย/กลาง/ขวา วางอัตโนมัติตามลำดับ และคง Structure 5 ชั้นแบบผู้รับ 1 คนต่อชั้น

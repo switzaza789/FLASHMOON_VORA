@@ -53,22 +53,22 @@ export function calculatePayouts(state, purchaseId) {
     const isFvr = type === 'fvr';
     const walletRole = meta.walletRole || (isFvr ? 'system' : 'realtime');
     const status = isFvr ? 'paid' : !recipient ? 'unmatched' : walletRole === 'realtime' ? 'paid' : walletRole === 'reserve' ? 'accumulating' : 'unmatched';
-    payouts.push({ id: id('pay'), purchaseId, sourceUserId: buyer?.id, recipientUserId: recipient?.id ?? null, recipientName: recipient?.name ?? (isFvr ? 'FVR/FM System Wallet' : 'ไม่มีผู้รับ'), type, amount, wallet: recipient ? `${recipient.username} wallet` : isFvr ? 'FVR/FM system wallet' : 'unassigned wallet', status, reason: recipient || isFvr ? null : 'ไม่มีผู้รับตามชั้นที่กำหนด', ...meta });
+    payouts.push({ id: id('pay'), purchaseId, sourceUserId: buyer?.id, recipientUserId: recipient?.id ?? null, recipientName: recipient?.name ?? (isFvr ? 'FRM System Wallet' : 'ไม่มีผู้รับ'), type, amount, wallet: recipient ? `${recipient.username} wallet` : isFvr ? 'FRM system wallet' : 'unassigned wallet', status, reason: recipient || isFvr ? null : 'ไม่มีผู้รับตามชั้นที่กำหนด', ...meta });
   };
   const systemRootId = state.binaryPositions.find((position) => !position.parentId)?.userId;
   const referralRecipient = buyer?.sponsorId ? state.users.find((user) => user.id === buyer.sponsorId) : state.users.find((user) => user.id === systemRootId);
-  add('referral', 30, referralRecipient);
+  add('referral', 20, referralRecipient);
   const uni = ancestors(state, buyer?.id, 10);
   for (let level = 1; level <= 10; level += 1) add('uni', 1, uni[level - 1], { level });
   const position = state.binaryPositions.find((item) => item.userId === buyer?.id);
   let currentParent = position?.parentId;
-  for (let level = 1; level <= 5; level += 1) {
+  for (let level = 1; level <= 3; level += 1) {
     const parent = state.users.find((user) => user.id === currentParent);
-    add('structure', 6, parent, { level, walletRole: 'realtime', walletLabel: 'Structure realtime wallet' });
-    add('structure', 4, parent, { level, walletRole: 'reserve', walletLabel: 'Structure reserve wallet' });
+    add('structure', 10, parent, { level, walletRole: 'realtime', walletLabel: 'Structure realtime wallet' });
+    add('structure', 10, parent, { level, walletRole: 'reserve', walletLabel: 'Structure reserve wallet' });
     currentParent = state.binaryPositions.find((item) => item.userId === currentParent)?.parentId;
   }
-  add('fvr', 10, null, { wallet: 'FVR/FM system wallet', walletRole: 'system', status: 'paid' });
+  add('fvr', 10, null, { wallet: 'FRM system wallet', walletRole: 'system', status: 'paid' });
   return payouts;
 }
 
@@ -88,7 +88,7 @@ export function recordPayouts(state, payouts, maxDepth = Infinity) {
   state.rebirths ||= [];
   state.settings ||= {};
   state.settings.rebirthEnabled = true;
-  state.settings.rebirthRule = 'structure-reserve-4-usdt-to-100';
+  state.settings.rebirthRule = 'structure-reserve-10-usdt-per-level-to-100';
   state.payouts.push(...payouts);
   for (const payout of payouts) {
     if (payout.type !== 'structure' || payout.walletRole !== 'reserve' || !payout.recipientUserId) continue;

@@ -56,7 +56,7 @@ test('payout allocation totals 100 USDT and preserves unmatched recipients', () 
   const payouts = calculatePayouts(state, purchase.purchase.id);
   assert.equal(payouts.reduce((sum, item) => sum + item.amount, 0), 100);
   assert.ok(payouts.some((item) => item.status === 'unmatched'));
-  assert.equal(payouts.find((item) => item.type === 'referral').amount, 30);
+  assert.equal(payouts.find((item) => item.type === 'referral').amount, 20);
 });
 
 test('duplicate purchase key returns the original purchase', () => {
@@ -96,33 +96,35 @@ test('registration without sponsor pays referral to system user one', () => {
   assert.equal(referral.recipientUserId, 'u1');
 });
 
-test('payouts send one structure recipient per level with realtime and reserve wallets', () => {
+test('payouts send structure to three tree ancestors with realtime and reserve wallets', () => {
   const state = baseState();
   const purchase = createPurchase(state, 'u2');
   const payouts = calculatePayouts(state, purchase.purchase.id);
   const structure = payouts.filter((item) => item.type === 'structure');
-  assert.equal(structure.length, 10);
-  assert.equal(new Set(structure.map((item) => item.level)).size, 5);
-  for (const level of [1, 2, 3, 4, 5]) {
+  assert.equal(structure.length, 6);
+  assert.equal(new Set(structure.map((item) => item.level)).size, 3);
+  for (const level of [1, 2, 3]) {
     const levelRows = structure.filter((item) => item.level === level);
     assert.equal(new Set(levelRows.map((item) => item.recipientUserId)).size, 1);
-    assert.equal(levelRows.reduce((sum, item) => sum + item.amount, 0), 10);
+    assert.equal(levelRows.reduce((sum, item) => sum + item.amount, 0), 20);
+    assert.equal(levelRows.find((item) => item.walletRole === 'realtime').amount, 10);
+    assert.equal(levelRows.find((item) => item.walletRole === 'reserve').amount, 10);
   }
   assert.equal(structure.filter((item) => item.walletRole === 'realtime').reduce((sum, item) => sum + item.amount, 0), 30);
-  assert.equal(structure.filter((item) => item.walletRole === 'reserve').reduce((sum, item) => sum + item.amount, 0), 20);
+  assert.equal(structure.filter((item) => item.walletRole === 'reserve').reduce((sum, item) => sum + item.amount, 0), 30);
   assert.ok(structure.filter((item) => item.walletRole === 'realtime' && item.recipientUserId).every((item) => item.status === 'paid'));
   assert.ok(structure.filter((item) => item.walletRole === 'reserve' && item.recipientUserId).every((item) => item.status === 'accumulating'));
   const fvr = payouts.find((item) => item.type === 'fvr');
   assert.equal(fvr.status, 'paid');
-  assert.equal(fvr.recipientName, 'FVR/FM System Wallet');
-  assert.equal(fvr.wallet, 'FVR/FM system wallet');
+  assert.equal(fvr.recipientName, 'FRM System Wallet');
+  assert.equal(fvr.wallet, 'FRM system wallet');
 });
 
 test('registration activates the member and records reserve accumulation', () => {
   const state = baseState();
   const result = registerMemberWithPackage(state, { name: 'Active User', sponsorId: 'u1', rootId: 'u1' });
   assert.equal(result.user.status, 'active');
-  assert.equal(state.reserveBalances.u1, 4);
+  assert.equal(state.reserveBalances.u1, 10);
   assert.equal(state.settings.rebirthEnabled, true);
 });
 
@@ -132,9 +134,10 @@ test('seeds the requested number of random active users with package purchases',
   assert.equal(result.users.length, 19);
   assert.equal(result.purchases.length, 19);
   assert.ok(result.users.every((user) => user.status === 'active'));
-  assert.equal(state.users.length, 22);
+  assert.equal(state.users.length, 22 + state.rebirths.length);
+  assert.ok(state.rebirths.length > 0);
   assert.equal(state.purchases.length, 19);
-  assert.ok(state.payouts.length >= 19 * 16);
+  assert.equal(state.payouts.length, 19 * 18);
 });
 
 test('seeds random users across three ternary levels without exceeding level three', () => {

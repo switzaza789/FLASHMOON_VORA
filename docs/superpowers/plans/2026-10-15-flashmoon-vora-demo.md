@@ -1,5 +1,7 @@
 # Flashmoon Vora Demo/Testnet Implementation Plan
 
+> Historical plan. Payout rules were updated later; use [the current demo design spec](../specs/2026-10-15-flashmoon-vora-demo-design.md) for active amounts and rebirth behavior.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** สร้างเว็บเดโมสองภาษาแบบ Interactive สำหรับทดลองซื้อแพ็กเกจ 100 USDT จำลอง ดู Binary Tree และตรวจสอบเส้นทางการจ่ายเงินแบบเจาะรายการได้ง่าย
